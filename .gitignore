@@ -1,0 +1,25 @@
+# Only the following should be committed:
+#   - index.html
+#   - listings.html
+#   - data/tee_times.json.enc
+# Everything else below is ignored.
+
+# Secrets
+.password
+
+# Plaintext data — only the encrypted version (.json.enc) should be committed
+data/*.json
+
+# Local-only tools (don't publish)
+distributed_scrape.py
+encrypt_data.py
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# OS
+Thumbs.db
+.DS_Store

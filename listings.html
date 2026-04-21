@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#4a7c3a" />
+<title>Tee Times Viewer</title>
+<style>
+  :root {
+    --sage: #9caf88;
+    --sage-light: #c7d3b5;
+    --sage-pale: #e6ecdc;
+    --grass: #4a7c3a;
+    --grass-dark: #365a2a;
+    --grass-deep: #24401c;
+    --tan: #d9c9a3;
+    --tan-light: #efe6d0;
+    --tan-pale: #f7f1e1;
+    --ink: #2b2f24;
+    --muted: #6b7360;
+    --line: #c9cfb8;
+  }
+  * { box-sizing: border-box; }
+  html, body { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: var(--tan-pale);
+    color: var(--ink);
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  h1 {
+    margin: 0 0 16px;
+    color: var(--grass-deep);
+    letter-spacing: 0.2px;
+  }
+  .panel {
+    background: #fffdf7;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(54, 90, 42, 0.08);
+  }
+  .filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .filters label {
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grass-dark);
+    gap: 4px;
+  }
+  .filters input,
+  .filters select {
+    padding: 8px 10px;
+    font-size: 16px; /* prevent iOS zoom-on-focus */
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fffdf7;
+    color: var(--ink);
+    width: 100%;
+    min-height: 40px;
+  }
+  .filters input:focus,
+  .filters select:focus {
+    outline: none;
+    border-color: var(--grass);
+    box-shadow: 0 0 0 2px var(--sage-pale);
+  }
+  .filters select[multiple] { min-height: 110px; font-weight: normal; }
+  .row-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .row-actions button {
+    padding: 10px 18px;
+    font-size: 15px;
+    border: 1px solid var(--grass-dark);
+    background: var(--grass);
+    color: #fffdf7;
+    border-radius: 6px;
+    cursor: pointer;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  .row-actions button:hover { background: var(--grass-dark); }
+  .row-actions button.secondary {
+    background: var(--tan-light);
+    color: var(--grass-dark);
+    border-color: var(--tan);
+  }
+  .row-actions button.secondary:hover {
+    background: var(--tan);
+    color: var(--grass-deep);
+  }
+  .summary {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .course-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .chip {
+    background: var(--sage-pale);
+    border: 1px solid var(--sage-light);
+    color: var(--grass-dark);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .chip .count {
+    color: var(--muted);
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    background: #fffdf7;
+  }
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--sage);
+    color: #fffdf7;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--grass-dark);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  thead th:hover { background: var(--grass); }
+  tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--tan-light);
+    white-space: nowrap;
+  }
+  tbody tr:nth-child(even) { background: var(--tan-pale); }
+  tbody tr:hover { background: var(--sage-pale); }
+  .table-wrap {
+    max-height: 65vh;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf7;
+  }
+  a.book-link {
+    color: var(--grass-dark);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  a.book-link:hover {
+    text-decoration: underline;
+    color: var(--grass-deep);
+  }
+  .empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  /* Card view for mobile */
+  .cards {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+  .card {
+    background: #fffdf7;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--grass);
+    border-radius: 8px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 2px rgba(54,90,42,0.06);
+  }
+  .card .course {
+    font-weight: 700;
+    color: var(--grass-deep);
+    margin-bottom: 6px;
+    font-size: 15px;
+  }
+  .card .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .card .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .card .tag {
+    background: var(--sage-pale);
+    color: var(--grass-dark);
+    border: 1px solid var(--sage-light);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+  }
+  .card .price {
+    font-weight: 700;
+    color: var(--grass-deep);
+  }
+  .card .book-link {
+    display: inline-block;
+    padding: 6px 12px;
+    background: var(--grass);
+    color: #fffdf7 !important;
+    border-radius: 6px;
+    font-size: 13px;
+    min-height: 32px;
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 12px; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+    h1 { font-size: 20px; }
+    .panel { padding: 12px; border-radius: 6px; }
+    .filters { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .filters label { font-size: 12px; }
+    .filters select[multiple] { min-height: 90px; }
+    .row-actions { flex-direction: column; align-items: stretch; }
+    .row-actions button { width: 100%; }
+    .summary { text-align: center; }
+    .course-chips { justify-content: center; }
+    .table-wrap { max-height: none; border: none; background: transparent; overflow: visible; padding: 0 !important; }
+    table { display: none; }
+    .cards { display: flex; }
+  }
+  @media (max-width: 420px) {
+    .filters { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <h1>Tee Times Viewer</h1>
+
+  <div class="panel">
+    <div class="filters">
+      <label>
+        Course
+        <select id="f-course" multiple></select>
+      </label>
+      <label>
+        Date from
+        <input type="date" id="f-date-from" />
+      </label>
+      <label>
+        Date to
+        <input type="date" id="f-date-to" />
+      </label>
+      <label>
+        Time from
+        <input type="time" id="f-time-from" value="06:00" />
+      </label>
+      <label>
+        Time to
+        <input type="time" id="f-time-to" value="10:00" />
+      </label>
+      <label>
+        Holes
+        <select id="f-holes">
+          <option value="">Any</option>
+        </select>
+      </label>
+      <label>
+        Min total golfers (seats)
+        <select id="f-min-seats">
+          <option value="">Any</option>
+          <option value="1">1+</option>
+          <option value="2">2+</option>
+          <option value="3">3+</option>
+          <option value="4">4+</option>
+        </select>
+      </label>
+      <label>
+        Max price ($)
+        <input type="number" id="f-max-price" min="0" step="1" placeholder="No limit" />
+      </label>
+    </div>
+    <div class="row-actions">
+      <div class="summary" id="summary">Loading…</div>
+      <div>
+        <button class="secondary" id="btn-reset">Reset filters</button>
+        <button class="secondary" id="btn-signout" style="display:none;margin-left:8px;">Sign out</button>
+      </div>
+    </div>
+    <div class="course-chips" id="course-chips"></div>
+  </div>
+
+  <div class="table-wrap panel" style="padding:0;">
+    <table id="tee-table">
+      <thead>
+        <tr>
+          <th data-sort="course_name">Course</th>
+          <th data-sort="date">Date</th>
+          <th data-sort="time">Time</th>
+          <th data-sort="holes">Holes</th>
+          <th data-sort="min_golfers">Min</th>
+          <th data-sort="max_golfers">Max</th>
+          <th data-sort="price">Price</th>
+          <th>Book</th>
+        </tr>
+      </thead>
+      <tbody id="tee-body"></tbody>
+    </table>
+    <div class="cards" id="tee-cards"></div>
+    <div class="empty" id="empty" style="display:none;">No tee times match the current filters.</div>
+  </div>
+
+<script>
+let ALL = [];
+let FILTERED = [];
+let sortKey = "date";
+let sortDir = 1;
+
+const $ = (id) => document.getElementById(id);
+
+async function load() {
+  // Order of preference:
+  //   1. Decrypted payload stashed in sessionStorage by login.html
+  //   2. Plaintext data/tee_times.json (unencrypted mode)
+  //   3. If only data/tee_times.json.enc exists, redirect to login.html
+  let data = null;
+  const cached = sessionStorage.getItem("tt_data");
+  if (cached) {
+    try {
+      data = JSON.parse(cached);
+    } catch (e) {
+      sessionStorage.removeItem("tt_data");
+    }
+  }
+  if (!data) {
+    try {
+      const res = await fetch("data/tee_times.json", { cache: "no-store" });
+      if (res.ok) data = await res.json();
+    } catch (e) { /* fall through */ }
+  }
+  if (!data) {
+    // Maybe only the encrypted file is deployed — check and redirect.
+    try {
+      const probe = await fetch("data/tee_times.json.enc", { method: "HEAD", cache: "no-store" });
+      if (probe.ok) {
+        location.replace("index.html");
+        return;
+      }
+    } catch (e) { /* ignore */ }
+    $("summary").textContent = "Failed to load tee times data. Serve this page from a local web server (e.g. `python -m http.server`).";
+    return;
+  }
+  ALL = (data.tee_times || []).map(normalize);
+  populateFilters();
+  bindEvents();
+  applyFilters();
+}
+
+function normalize(t) {
+  // Canonical schema: date = "YYYY-MM-DD", time = "HH:MM".
+  // Keep a tolerant parser as a safety net in case older records slip in.
+  let hhmm = "";
+  if (typeof t.time === "string") {
+    const s = t.time.trim();
+    const ampm = s.match(/(\d{1,2}):(\d{2})\s*([AaPp])[Mm]?/);
+    if (ampm) {
+      let h = parseInt(ampm[1], 10);
+      const pm = /p/i.test(ampm[3]);
+      if (pm && h !== 12) h += 12;
+      if (!pm && h === 12) h = 0;
+      hhmm = String(h).padStart(2, "0") + ":" + ampm[2];
+    } else {
+      const m = s.match(/(\d{1,2}):(\d{2})/);
+      if (m) hhmm = String(parseInt(m[1], 10)).padStart(2, "0") + ":" + m[2];
+    }
+  }
+  let iso = "";
+  let displayDate = t.date || "";
+  if (typeof t.date === "string") {
+    let m = t.date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) {
+      iso = t.date;
+      displayDate = `${m[2]}-${m[3]}-${m[1]}`; // show MM-DD-YYYY
+    } else if ((m = t.date.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/))) {
+      iso = `${m[3]}-${String(m[1]).padStart(2,"0")}-${String(m[2]).padStart(2,"0")}`;
+      displayDate = `${String(m[1]).padStart(2,"0")}-${String(m[2]).padStart(2,"0")}-${m[3]}`;
+    } else {
+      iso = t.date;
+    }
+  }
+  return { ...t, date: displayDate, _hhmm: hhmm, _iso: iso };
+}
+
+function populateFilters() {
+  const courses = [...new Set(ALL.map(t => t.course_name))].sort();
+  const sel = $("f-course");
+  sel.innerHTML = "";
+  courses.forEach(c => {
+    const o = document.createElement("option");
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+
+  const holes = [...new Set(ALL.map(t => t.holes).filter(h => h != null))].sort((a,b)=>a-b);
+  const hsel = $("f-holes");
+  holes.forEach(h => {
+    const o = document.createElement("option");
+    o.value = String(h); o.textContent = h;
+    hsel.appendChild(o);
+  });
+
+  const dates = ALL.map(t => t._iso).filter(Boolean).sort();
+  if (dates.length) {
+    $("f-date-from").min = dates[0];
+    $("f-date-from").max = dates[dates.length-1];
+    $("f-date-to").min = dates[0];
+    $("f-date-to").max = dates[dates.length-1];
+  }
+}
+
+function bindEvents() {
+  ["f-course","f-date-from","f-date-to","f-time-from","f-time-to","f-holes","f-min-seats","f-max-price"]
+    .forEach(id => $(id).addEventListener("input", applyFilters));
+  $("btn-reset").addEventListener("click", () => {
+    $("f-course").selectedIndex = -1;
+    [...$("f-course").options].forEach(o => o.selected = false);
+    $("f-date-from").value = "";
+    $("f-date-to").value = "";
+    $("f-time-from").value = "06:00";
+    $("f-time-to").value = "10:00";
+    $("f-holes").value = "";
+    $("f-min-seats").value = "";
+    $("f-max-price").value = "";
+    applyFilters();
+  });
+  document.querySelectorAll("th[data-sort]").forEach(th => {
+    th.addEventListener("click", () => {
+      const k = th.dataset.sort;
+      if (sortKey === k) sortDir *= -1;
+      else { sortKey = k; sortDir = 1; }
+      renderTable();
+    });
+  });
+
+  // Show sign-out only when data came from a decrypted session.
+  if (sessionStorage.getItem("tt_data")) {
+    const btn = $("btn-signout");
+    btn.style.display = "";
+    btn.addEventListener("click", () => {
+      sessionStorage.removeItem("tt_data");
+      location.replace("index.html");
+    });
+  }
+}
+
+function applyFilters() {
+  const selCourses = [...$("f-course").selectedOptions].map(o => o.value);
+  const dFrom = $("f-date-from").value;
+  const dTo = $("f-date-to").value;
+  const tFrom = $("f-time-from").value;
+  const tTo = $("f-time-to").value;
+  const holes = $("f-holes").value;
+  const minSeats = parseInt($("f-min-seats").value || "0", 10);
+  const maxPrice = $("f-max-price").value === "" ? null : parseFloat($("f-max-price").value);
+
+  FILTERED = ALL.filter(t => {
+    if (selCourses.length && !selCourses.includes(t.course_name)) return false;
+    if (dFrom && t._iso && t._iso < dFrom) return false;
+    if (dTo && t._iso && t._iso > dTo) return false;
+    if (tFrom && t._hhmm && t._hhmm < tFrom) return false;
+    if (tTo && t._hhmm && t._hhmm > tTo) return false;
+    if (holes && String(t.holes) !== holes) return false;
+    if (minSeats && Number(t.max_golfers || 0) < minSeats) return false;
+    if (maxPrice != null && Number(t.price || 0) > maxPrice) return false;
+    return true;
+  });
+
+  renderSummary();
+  renderTable();
+}
+
+function renderSummary() {
+  const counts = {};
+  FILTERED.forEach(t => { counts[t.course_name] = (counts[t.course_name] || 0) + 1; });
+  const courseNames = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
+  $("summary").textContent =
+    `${FILTERED.length.toLocaleString()} tee times across ${courseNames.length} courses (of ${ALL.length.toLocaleString()} total).`;
+  const chips = $("course-chips");
+  chips.innerHTML = "";
+  courseNames.forEach(c => {
+    const span = document.createElement("span");
+    span.className = "chip";
+    span.innerHTML = `${c}<span class="count">${counts[c]}</span>`;
+    chips.appendChild(span);
+  });
+}
+
+function renderTable() {
+  const body = $("tee-body");
+  const cards = $("tee-cards");
+  const empty = $("empty");
+  body.innerHTML = "";
+  cards.innerHTML = "";
+
+  if (!FILTERED.length) {
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+
+  const sorted = [...FILTERED].sort((a,b) => {
+    let av = a[sortKey], bv = b[sortKey];
+    if (sortKey === "date") { av = a._iso + " " + a._hhmm; bv = b._iso + " " + b._hhmm; }
+    if (sortKey === "time") { av = a._hhmm; bv = b._hhmm; }
+    if (av == null) av = "";
+    if (bv == null) bv = "";
+    if (typeof av === "number" && typeof bv === "number") return (av - bv) * sortDir;
+    return String(av).localeCompare(String(bv)) * sortDir;
+  });
+
+  // Cap rendered rows to keep DOM responsive
+  const CAP = 2000;
+  const rows = sorted.slice(0, CAP);
+  const frag = document.createDocumentFragment();
+  const cardFrag = document.createDocumentFragment();
+  rows.forEach(t => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(t.course_name)}</td>
+      <td>${escapeHtml(t.date || "")}</td>
+      <td>${escapeHtml(t._hhmm || "")}</td>
+      <td>${t.holes ?? ""}</td>
+      <td>${t.min_golfers ?? ""}</td>
+      <td>${t.max_golfers ?? ""}</td>
+      <td>${t.price != null ? "$" + t.price : ""}</td>
+      <td>${t.link_to_booking ? `<a class="book-link" href="${encodeURI(t.link_to_booking)}" target="_blank" rel="noopener">Book</a>` : ""}</td>
+    `;
+    frag.appendChild(tr);
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="course">${escapeHtml(t.course_name)}</div>
+      <div class="row">
+        <div><strong>${escapeHtml(t.date || "")}</strong> &middot; ${escapeHtml(t._hhmm || "")}</div>
+        <div class="price">${t.price != null ? "$" + t.price : ""}</div>
+      </div>
+      <div class="meta">
+        ${t.holes != null ? `<span class="tag">${t.holes} holes</span>` : ""}
+        <span class="tag">${t.min_golfers ?? "?"}–${t.max_golfers ?? "?"} golfers</span>
+        ${t.link_to_booking ? `<a class="book-link" href="${encodeURI(t.link_to_booking)}" target="_blank" rel="noopener">Book</a>` : ""}
+      </div>
+    `;
+    cardFrag.appendChild(card);
+  });
+  body.appendChild(frag);
+  cards.appendChild(cardFrag);
+
+  if (sorted.length > CAP) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="8" style="text-align:center;color:#888;padding:12px;">Showing first ${CAP.toLocaleString()} of ${sorted.length.toLocaleString()} results — refine filters to see more.</td>`;
+    body.appendChild(tr);
+    const more = document.createElement("div");
+    more.style.cssText = "text-align:center;color:#888;padding:10px;";
+    more.textContent = `Showing first ${CAP.toLocaleString()} of ${sorted.length.toLocaleString()} results — refine filters to see more.`;
+    cards.appendChild(more);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+
+load();
+</script>
+</body>
+</html>
