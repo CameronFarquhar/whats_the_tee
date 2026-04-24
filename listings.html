@@ -444,7 +444,19 @@ function populateFilters() {
 }
 
 function bindEvents() {
-  ["f-course","f-date-from","f-date-to","f-time-from","f-time-to","f-holes","f-min-seats","f-max-price"]
+  $("f-date-from").addEventListener("input", () => {
+    const from = $("f-date-from").value;
+    const to   = $("f-date-to").value;
+    if (from && to && from > to) $("f-date-to").value = from;
+    applyFilters();
+  });
+  $("f-date-to").addEventListener("input", () => {
+    const from = $("f-date-from").value;
+    const to   = $("f-date-to").value;
+    if (from && to && to < from) $("f-date-from").value = to;
+    applyFilters();
+  });
+  ["f-course","f-time-from","f-time-to","f-holes","f-min-seats","f-max-price"]
     .forEach(id => $(id).addEventListener("input", applyFilters));
   $("btn-reset").addEventListener("click", () => {
     $("f-course").selectedIndex = -1;
