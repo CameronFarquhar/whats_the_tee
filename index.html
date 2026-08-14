@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#4a7c3a" />
+<title>Tee Times — Sign in</title>
+<style>
+  :root {
+    --sage: #9caf88;
+    --sage-light: #c7d3b5;
+    --sage-pale: #e6ecdc;
+    --grass: #4a7c3a;
+    --grass-dark: #365a2a;
+    --grass-deep: #24401c;
+    --tan: #d9c9a3;
+    --tan-light: #efe6d0;
+    --tan-pale: #f7f1e1;
+    --ink: #2b2f24;
+    --muted: #6b7360;
+    --line: #c9cfb8;
+    --danger: #a0432c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--tan-pale);
+    color: var(--ink);
+    padding: 20px;
+  }
+  .card {
+    background: #fffdf7;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 28px 26px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 2px 10px rgba(54, 90, 42, 0.12);
+  }
+  h1 {
+    margin: 0 0 6px;
+    color: var(--grass-deep);
+    font-size: 22px;
+  }
+  .subtitle {
+    margin: 0 0 20px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grass-dark);
+    margin-bottom: 6px;
+  }
+  input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 16px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fffdf7;
+    color: var(--ink);
+    min-height: 44px;
+  }
+  input[type="password"]:focus {
+    outline: none;
+    border-color: var(--grass);
+    box-shadow: 0 0 0 2px var(--sage-pale);
+  }
+  button {
+    margin-top: 16px;
+    width: 100%;
+    padding: 12px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    border: 1px solid var(--grass-dark);
+    background: var(--grass);
+    color: #fffdf7;
+    border-radius: 6px;
+    cursor: pointer;
+    min-height: 46px;
+  }
+  button:hover:not(:disabled) { background: var(--grass-dark); }
+  button:disabled { opacity: 0.6; cursor: wait; }
+  .msg {
+    margin-top: 14px;
+    font-size: 13px;
+    min-height: 18px;
+  }
+  .msg.error { color: var(--danger); }
+  .msg.info { color: var(--muted); }
+</style>
+</head>
+<body>
+  <form class="card" id="form" autocomplete="off">
+    <h1>Tee Times</h1>
+    <p class="subtitle">Enter the shared passphrase to view listings.</p>
+    <label for="pw">Passphrase</label>
+    <input id="pw" type="password" autocomplete="current-password" autofocus required />
+    <button type="submit" id="go">Unlock</button>
+    <div id="msg" class="msg"></div>
+  </form>
+
+<script>
+const ENC_URL = "data/tee_times.json.enc";
+
+function b64decode(s) {
+  const bin = atob(s);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+async function deriveKey(password, salt, iterations) {
+  const baseKey = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"]
+  );
+}
+
+async function attemptDecrypt(password) {
+  const res = await fetch(ENC_URL, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Could not load encrypted data (HTTP ${res.status}).`);
+  const env = await res.json();
+  if (env.v !== 1 || env.kdf !== "PBKDF2-SHA256") {
+    throw new Error("Unsupported envelope format.");
+  }
+  const salt = b64decode(env.salt);
+  const nonce = b64decode(env.nonce);
+  const ct = b64decode(env.ciphertext);
+  const key = await deriveKey(password, salt, env.iter);
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: nonce }, key, ct);
+  return new TextDecoder().decode(pt);
+}
+
+const form = document.getElementById("form");
+const pw = document.getElementById("pw");
+const go = document.getElementById("go");
+const msg = document.getElementById("msg");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  msg.className = "msg info";
+  msg.textContent = "Decrypting…";
+  go.disabled = true;
+  try {
+    const plaintext = await attemptDecrypt(pw.value);
+    // Validate it's really our JSON before trusting
+    JSON.parse(plaintext);
+    sessionStorage.setItem("tt_data", plaintext);
+    msg.className = "msg info";
+    msg.textContent = "Unlocked. Redirecting…";
+    location.href = "listings.html";
+  } catch (err) {
+    msg.className = "msg error";
+    if (err && err.name === "OperationError") {
+      msg.textContent = "Incorrect passphrase.";
+    } else {
+      msg.textContent = err.message || "Unable to decrypt.";
+    }
+    go.disabled = false;
+    pw.select();
+  }
+});
+</script>
+</body>
+</html>
