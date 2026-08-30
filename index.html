@@ -135,8 +135,8 @@ async function deriveKey(password, salt, iterations) {
   );
 }
 
-async function attemptDecrypt(password) {
-  const res = await fetch(ENC_URL, { cache: "no-store" });
+async function attemptDecrypt(password, encUrl = ENC_URL) {
+  const res = await fetch(encUrl, { cache: "no-store" });
   if (!res.ok) throw new Error(`Could not load encrypted data (HTTP ${res.status}).`);
   const env = await res.json();
   if (env.v !== 1 || env.kdf !== "PBKDF2-SHA256") {
@@ -165,6 +165,17 @@ form.addEventListener("submit", async (e) => {
     // Validate it's really our JSON before trusting
     JSON.parse(plaintext);
     sessionStorage.setItem("tt_data", plaintext);
+    sessionStorage.setItem("password", pw.value);
+    
+    // Also decrypt and cache error_log.json.enc
+    try {
+      const errorLogPlaintext = await attemptDecrypt(pw.value, "data/error_log.json.enc");
+      JSON.parse(errorLogPlaintext);
+      sessionStorage.setItem("error_log_data", errorLogPlaintext);
+    } catch (e) {
+      console.log("Could not decrypt error logs (may not exist):", e.message);
+    }
+    
     msg.className = "msg info";
     msg.textContent = "Unlocked. Redirecting…";
     location.href = "listings.html";
