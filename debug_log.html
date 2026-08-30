@@ -266,6 +266,177 @@
             background: #eaecef;
             border-color: #d1d5da;
         }
+
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .container {
+                max-width: 100%;
+            }
+
+            h1 {
+                font-size: 1.5em;
+                margin-bottom: 15px;
+            }
+
+            .header {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                z-index: 1000;
+            }
+
+            .back-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .filter-section {
+                padding: 12px;
+                margin-bottom: 15px;
+            }
+
+            .filter-controls {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .filter-group {
+                min-width: unset;
+                width: 100%;
+            }
+
+            input, select {
+                width: 100%;
+                padding: 10px;
+                font-size: 16px; /* Prevents iOS zoom on input focus */
+            }
+
+            .error-item {
+                margin-bottom: 8px;
+            }
+
+            .error-summary {
+                padding: 12px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .error-code-display {
+                min-width: unset;
+                width: 100%;
+                margin-bottom: 8px;
+                font-size: 1.1em;
+            }
+
+            .error-details {
+                flex-direction: column;
+                gap: 10px;
+                width: 100%;
+                font-size: 0.9em;
+            }
+
+            .error-detail-item {
+                flex: none;
+                width: 100%;
+            }
+
+            .expand-toggle {
+                margin-right: 8px;
+                width: auto;
+            }
+
+            .error-content {
+                padding: 12px;
+            }
+
+            .json-block {
+                padding: 10px;
+                font-size: 0.85em;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .iteration-block {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+
+            .iteration-header {
+                font-size: 0.95em;
+                margin-bottom: 8px;
+            }
+
+            .iteration-field {
+                margin-bottom: 10px;
+            }
+
+            .iteration-field-label {
+                font-size: 0.9em;
+            }
+
+            .iteration-field-value {
+                font-size: 0.9em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+
+            .header {
+                top: 8px;
+                right: 8px;
+            }
+
+            h1 {
+                font-size: 1.2em;
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+            }
+
+            .filter-section {
+                padding: 10px;
+                margin-bottom: 12px;
+            }
+
+            .error-summary {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            .error-code-display {
+                font-size: 1em;
+                margin-bottom: 6px;
+            }
+
+            .error-details {
+                gap: 8px;
+            }
+
+            .error-detail-label {
+                font-size: 0.8em;
+            }
+
+            .error-detail-value {
+                font-size: 0.9em;
+            }
+
+            .status-badge, .flag-badge {
+                font-size: 0.8em;
+                padding: 2px 6px;
+            }
+
+            .back-btn {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+        }
     </style>
 </head>
 <body>
