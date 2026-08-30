@@ -384,7 +384,18 @@
 
         // Load and display error data from both JSON files
         document.addEventListener('DOMContentLoaded', function() {
-            // Load both JSON files and populate the table
+            // Check if user has logged in (error_log_data or password in sessionStorage)
+            const cachedData = sessionStorage.getItem('error_log_data');
+            const password = sessionStorage.getItem('password');
+            
+            if (!cachedData && !password) {
+                // Not logged in, redirect to login page
+                console.log('No authentication found, redirecting to login...');
+                location.replace('index.html');
+                return;
+            }
+            
+            // Load error data
             loadErrorData();
         });
 
