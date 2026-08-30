@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Tracking System</title>
+    <style>
+        /* GitHub-style aesthetics */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.5;
+            color: #24292e;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+            font-size: 2em;
+        }
+
+        .filter-section {
+            background-color: #f6f8fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #d1d5da;
+        }
+
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        input, select {
+            padding: 8px;
+            border: 1px solid #d1d5da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+            border: 1px solid #eaecef;
+            border-radius: 6px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #ffffff;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eaecef;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background-color: #f6f8fa;
+        }
+
+        .error-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .error-item {
+            margin-bottom: 10px;
+            border: 1px solid #eaecef;
+            border-radius: 6px;
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+
+        .error-summary {
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            background-color: #f6f8fa;
+            border-bottom: 1px solid #eaecef;
+            transition: background-color 0.2s;
+        }
+
+        .error-summary:hover {
+            background-color: #e1e4e8;
+        }
+
+        .expand-toggle {
+            margin-right: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            width: 20px;
+            text-align: center;
+            color: #586069;
+        }
+
+        .error-code-display {
+            font-weight: 600;
+            color: #24292e;
+            min-width: 150px;
+        }
+
+        .error-details {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            font-size: 0.95em;
+        }
+
+        .error-detail-item {
+            flex: 1;
+        }
+
+        .error-detail-label {
+            font-weight: 600;
+            color: #586069;
+            font-size: 0.85em;
+        }
+
+        .error-detail-value {
+            color: #24292e;
+            word-break: break-word;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-resolved {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-unresolved {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .flag-badge {
+            display: inline-block;
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .error-content {
+            display: none;
+            padding: 20px;
+            background-color: #fafbfc;
+            border-top: 1px solid #eaecef;
+        }
+
+        .error-content.expanded {
+            display: block;
+        }
+
+        .json-block {
+            background-color: #ffffff;
+            border: 1px solid #eaecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #24292e;
+        }
+
+        .iteration-block {
+            background-color: #ffffff;
+            border: 1px solid #eaecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .iteration-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eaecef;
+            color: #24292e;
+        }
+
+        .iteration-field {
+            margin-bottom: 12px;
+        }
+
+        .iteration-field-label {
+            font-weight: 600;
+            color: #586069;
+            font-size: 0.95em;
+        }
+
+        .iteration-field-value {
+            color: #24292e;
+            margin-top: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .back-btn {
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid #d1d5da;
+            background: #f6f8fa;
+            color: #24292e;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #eaecef;
+            border-color: #d1d5da;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="listings.html" class="back-btn">← Back to Listings</a>
+    </div>
+    <div class="container">
+        <h1>Bug Tracking System</h1>
+        
+        <div class="filter-section">
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label for="statusFilter">Status:</label>
+                    <select id="statusFilter">
+                        <option value="all">All</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="unresolved">Unresolved</option>
+                    </select>
+                </div>
+                
+                
+                <div class="filter-group">
+                    <label for="searchInput">Search:</label>
+                    <input type="text" id="searchInput" placeholder="Search by error code, file, or description...">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="flagFilter">Priority:</label>
+                    <select id="flagFilter">
+                        <option value="all">All</option>
+                        <option value="flagged">Flagged Only</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="errorDate">Error Date:</label>
+                    <input type="date" id="errorDate">
+                </div>
+
+                <div class="filter-group">
+                    <label for="resolveDate">Resolve Date:</label>
+                    <input type="date" id="resolveDate">
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <ul class="error-list" id="errorList">
+                <li style="padding: 15px; text-align: center; color: #586069;">Loading error data...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Helper function to parse dates in both ISO and space-separated formats
+        function parseDate(dateString) {
+            if (!dateString) return 'N/A';
+            
+            try {
+                // Convert space format to ISO format for reliable parsing
+                const isoString = dateString.replace(' ', 'T');
+                const date = new Date(isoString);
+                
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                    console.error('Invalid date parsed:', dateString, 'became:', isoString);
+                    return dateString; // Return original string if parsing fails
+                }
+                
+                return date.toLocaleString();
+            } catch (e) {
+                console.error('Error parsing date:', dateString, e);
+                return dateString;
+            }
+        }
+
+        // Decryption helper functions (from index.html)
+        function b64decode(s) {
+            const bin = atob(s);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes;
+        }
+
+        async function deriveKey(password, salt, iterations) {
+            const baseKey = await crypto.subtle.importKey(
+                'raw',
+                new TextEncoder().encode(password),
+                { name: 'PBKDF2' },
+                false,
+                ['deriveKey']
+            );
+            return crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+                baseKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
+            );
+        }
+
+        async function attemptDecrypt(password, encUrl) {
+            const res = await fetch(encUrl, { cache: 'no-store' });
+            if (!res.ok) throw new Error(`Could not load encrypted data (HTTP ${res.status}).`);
+            const env = await res.json();
+            if (env.v !== 1 || env.kdf !== 'PBKDF2-SHA256') {
+                throw new Error('Unsupported envelope format.');
+            }
+            const salt = b64decode(env.salt);
+            const nonce = b64decode(env.nonce);
+            const ct = b64decode(env.ciphertext);
+            const key = await deriveKey(password, salt, env.iter);
+            const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: nonce }, key, ct);
+            return new TextDecoder().decode(pt);
+        }
+
+        // Load and display error data from both JSON files
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load both JSON files and populate the table
+            loadErrorData();
+        });
+
+        async function loadErrorData() {
+            try {
+                const password = sessionStorage.getItem('password');
+                let plaintext;
+                
+                if (password) {
+                    // Decrypt error_log.json.enc using password from sessionStorage
+                    console.log('Attempting to decrypt error_log.json.enc...');
+                    plaintext = await attemptDecrypt(password, './data/error_log.json.enc');
+                } else {
+                    // Fall back to plain error_log.json if no password available
+                    console.log('No password found, loading plain error_log.json...');
+                    const response = await fetch('./data/error_log.json', { cache: 'no-store' });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    plaintext = await response.text();
+                }
+                
+                const data = JSON.parse(plaintext);
+                console.log('Data loaded successfully:', data);
+                if (data && data.errors) {
+                    console.log(`Found ${data.errors.length} errors`);
+                    processMainErrors(data.errors);
+                } else {
+                    console.error('No errors array found in data');
+                    document.getElementById('errorList').innerHTML = '<li style="padding: 15px; color: red;">No errors data found</li>';
+                }
+            } catch (error) {
+                console.error('Error loading error data:', error);
+                document.getElementById('errorList').innerHTML = `<li style="padding: 15px; color: red;">Error loading error data: ${error.message || error}</li>`;
+            }
+        }
+
+        function processMainErrors(errors) {
+            const errorList = document.getElementById('errorList');
+            errorList.innerHTML = '';
+            
+            console.log('Processing', errors.length, 'errors');
+
+            for (const error of errors) {
+                console.log('Processing error:', error.error_code);
+                
+                // Parse dates
+                let errorDate = 'N/A';
+                let addressDate = 'N/A';
+                let resolvedDate = 'N/A';
+                let errorDateISO = '';
+                
+                try {
+                    errorDate = parseDate(error.error_date);
+                    addressDate = parseDate(error.address_date);
+                    resolvedDate = parseDate(error.resolve_date);
+                    const errorDateObj = new Date(error.error_date.replace(' ', 'T'));
+                    errorDateISO = errorDateObj.toISOString().split('T')[0];
+                } catch (e) {
+                    console.error('Error parsing dates:', e);
+                }
+                
+                const iterationCount = error.iteration ? error.iteration.length : 0;
+                const resolutionSummary = error.resolution ? error.resolution.substring(0, 80) : 'No resolution';
+
+                // Create error item
+                const errorItem = document.createElement('li');
+                errorItem.className = 'error-item';
+                errorItem.dataset.status = error.resolved ? 'resolved' : 'unresolved';
+                errorItem.dataset.flagged = error.flag ? 'flagged' : 'unflagged';
+                errorItem.dataset.errorDate = errorDateISO;
+
+                // Create summary (collapsed view)
+                const summary = document.createElement('div');
+                summary.className = 'error-summary';
+                summary.innerHTML = `
+                    <span class="expand-toggle">▶</span>
+                    <div style="flex: 1;">
+                        <div class="error-code-display">${error.error_code}</div>
+                        <div class="error-details">
+                            <div class="error-detail-item">
+                                <div class="error-detail-label">File</div>
+                                <div class="error-detail-value">${error.error_file}</div>
+                            </div>
+                            <div class="error-detail-item">
+                                <div class="error-detail-label">Status</div>
+                                <div class="error-detail-value">
+                                    <span class="status-badge ${error.resolved ? 'status-resolved' : 'status-unresolved'}">
+                                        ${error.resolved ? 'Resolved' : 'Unresolved'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="error-detail-item">
+                                <div class="error-detail-label">Error Date</div>
+                                <div class="error-detail-value">${errorDate}</div>
+                            </div>
+                            <div class="error-detail-item">
+                                <div class="error-detail-label">Resolved</div>
+                                <div class="error-detail-value">${resolvedDate}</div>
+                            </div>
+                            <div class="error-detail-item">
+                                <div class="error-detail-label">Attempts</div>
+                                <div class="error-detail-value">${iterationCount}</div>
+                            </div>
+                            ${error.flag ? `<div class="error-detail-item"><span class="flag-badge">FLAGGED</span></div>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                // Create detailed content (expanded view)
+                const detailContent = document.createElement('div');
+                detailContent.className = 'error-content';
+
+                // Build iterations HTML
+                let iterationsHTML = '';
+                if (error.iteration && Array.isArray(error.iteration)) {
+                    for (const iter of error.iteration) {
+                        const testsRunText = Array.isArray(iter.tests_run) ? iter.tests_run.join('<br/>') : iter.tests_run;
+                        iterationsHTML += `
+                            <div class="iteration-block">
+                                <div class="iteration-header">Attempt ${iter.attempt}</div>
+                                <div class="iteration-field">
+                                    <div class="iteration-field-label">Timestamp</div>
+                                    <div class="iteration-field-value">${parseDate(iter.timestamp)}</div>
+                                </div>
+                                <div class="iteration-field">
+                                    <div class="iteration-field-label">Diagnosis</div>
+                                    <div class="iteration-field-value">${iter.diagnosis}</div>
+                                </div>
+                                <div class="iteration-field">
+                                    <div class="iteration-field-label">Changes</div>
+                                    <div class="iteration-field-value">${iter.changes || iter.change || 'None'}</div>
+                                </div>
+                                <div class="iteration-field">
+                                    <div class="iteration-field-label">Tests Run</div>
+                                    <div class="iteration-field-value">${testsRunText}</div>
+                                </div>
+                                <div class="iteration-field">
+                                    <div class="iteration-field-label">Result</div>
+                                    <div class="iteration-field-value">${iter.result}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                detailContent.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 15px 0; color: #24292e;">${error.error_code}</h3>
+                        <div class="json-block">{
+  "error_date": "${error.error_date}",
+  "address_date": "${error.address_date}",
+  "resolve_date": "${error.resolve_date}",
+  "resolved": ${error.resolved},
+  "error_code": "${error.error_code}",
+  "error_file": "${error.error_file}",
+  "flag": ${error.flag},
+  "iterations": ${iterationCount}
+}</div>
+                    </div>
+
+                    <div>
+                        <h4 style="margin: 20px 0 15px 0; color: #24292e;">Iteration Details:</h4>
+                        ${iterationsHTML}
+                    </div>
+
+                    <div style="margin-top: 20px; padding: 15px; background-color: #f6f8fa; border-radius: 4px;">
+                        <h4 style="margin-top: 0; color: #24292e;">Full Resolution</h4>
+                        <div style="color: #24292e; line-height: 1.6;">${error.resolution || 'No resolution provided'}</div>
+                    </div>
+                `;
+
+                // Add click handler to toggle expansion
+                summary.addEventListener('click', function() {
+                    const toggle = summary.querySelector('.expand-toggle');
+                    detailContent.classList.toggle('expanded');
+                    toggle.textContent = detailContent.classList.contains('expanded') ? '▼' : '▶';
+                });
+
+                errorItem.appendChild(summary);
+                errorItem.appendChild(detailContent);
+                errorList.appendChild(errorItem);
+            }
+        }
+
+
+
+        function toggleDetails(row) {
+            const detailRow = document.getElementById(`details-${row.cells[0].textContent}`);
+            if (detailRow) {
+                detailRow.style.display = detailRow.style.display === 'none' ? '' : 'none';
+            }
+        }
+
+        // Filter functionality
+        document.getElementById('statusFilter').addEventListener('change', filterTable);
+        document.getElementById('flagFilter').addEventListener('change', filterTable);
+        document.getElementById('searchInput').addEventListener('input', filterTable);
+        document.getElementById('errorDate').addEventListener('change', filterTable);
+        document.getElementById('resolveDate').addEventListener('change', filterTable);
+
+        function filterTable() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const flagFilter = document.getElementById('flagFilter').value;
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const errorDateFilter = document.getElementById('errorDate').value;
+            const resolveDateFilter = document.getElementById('resolveDate').value;
+
+            const errorList = document.getElementById('errorList');
+            const errorItems = errorList.querySelectorAll('.error-item');
+
+            for (const item of errorItems) {
+                const status = item.dataset.status;
+                const flagged = item.dataset.flagged;
+                const errorDateValue = item.dataset.errorDate;
+                
+                // Check if any text in the error contains the search input
+                let matchesSearch = false;
+                if (searchInput === '') {
+                    matchesSearch = true;
+                } else {
+                    const text = item.textContent.toLowerCase();
+                    matchesSearch = text.includes(searchInput);
+                }
+
+                // Apply date filter
+                const errorDateMatch = errorDateFilter === '' || errorDateValue === errorDateFilter;
+
+                // Apply filters
+                const statusMatch = statusFilter === 'all' || status === statusFilter;
+                const flagMatch = flagFilter === 'all' || flagged === flagFilter;
+
+                if (statusMatch && flagMatch && matchesSearch && errorDateMatch) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
