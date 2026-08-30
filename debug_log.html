@@ -613,9 +613,16 @@
             const errorList = document.getElementById('errorList');
             errorList.innerHTML = '';
             
-            console.log('Processing', errors.length, 'errors');
+            // Sort errors by error_date in descending order (most recent first)
+            const sortedErrors = errors.sort((a, b) => {
+                const dateA = new Date(a.error_date.replace(' ', 'T'));
+                const dateB = new Date(b.error_date.replace(' ', 'T'));
+                return dateB - dateA; // Descending order (most recent first)
+            });
+            
+            console.log('Processing', sortedErrors.length, 'errors');
 
-            for (const error of errors) {
+            for (const error of sortedErrors) {
                 console.log('Processing error:', error.error_code);
                 
                 // Parse dates
