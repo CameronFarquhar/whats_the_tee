@@ -390,21 +390,26 @@
 
         async function loadErrorData() {
             try {
-                const password = sessionStorage.getItem('password');
-                let plaintext;
+                let plaintext = sessionStorage.getItem('error_log_data');
                 
-                if (password) {
-                    // Decrypt error_log.json.enc using password from sessionStorage
-                    console.log('Attempting to decrypt error_log.json.enc...');
-                    plaintext = await attemptDecrypt(password, './data/error_log.json.enc');
+                if (plaintext) {
+                    // Use cached decrypted data from sessionStorage
+                    console.log('Loading error data from sessionStorage...');
                 } else {
-                    // Fall back to plain error_log.json if no password available
-                    console.log('No password found, loading plain error_log.json...');
-                    const response = await fetch('./data/error_log.json', { cache: 'no-store' });
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                    // Fallback: Try to decrypt using password (for direct access)
+                    const password = sessionStorage.getItem('password');
+                    if (password) {
+                        console.log('No cached data, attempting to decrypt error_log.json.enc...');
+                        plaintext = await attemptDecrypt(password, 'data/error_log.json.enc');
+                    } else {
+                        // Last resort: Try plain JSON
+                        console.log('No password found, loading plain error_log.json...');
+                        const response = await fetch('data/error_log.json', { cache: 'no-store' });
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        plaintext = await response.text();
                     }
-                    plaintext = await response.text();
                 }
                 
                 const data = JSON.parse(plaintext);
